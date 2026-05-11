@@ -8,6 +8,20 @@ const axiosClient = axios.create({
   },
 });
 
+// Request interceptor to attach token
+axiosClient.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 // Response interceptor for API calls
 axiosClient.interceptors.response.use(
   (response) => {

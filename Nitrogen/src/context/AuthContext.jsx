@@ -29,6 +29,9 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     const response = await axiosClient.post('/users/login', { email, password });
+    if (response.data.token) {
+      localStorage.setItem('token', response.data.token);
+    }
     setUser(response.data.data.user);
     setIsAuthenticated(true);
     return response.data;
@@ -36,6 +39,9 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (userData) => {
     const response = await axiosClient.post('/users/register', userData);
+    if (response.data.token) {
+      localStorage.setItem('token', response.data.token);
+    }
     setUser(response.data.data.user);
     setIsAuthenticated(true);
     return response.data;
@@ -43,6 +49,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     await axiosClient.get('/users/logout');
+    localStorage.removeItem('token');
     setUser(null);
     setIsAuthenticated(false);
   };
