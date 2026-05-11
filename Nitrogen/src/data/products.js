@@ -1,0 +1,141 @@
+export const PRODUCTS = [
+  {
+    id: '1',
+    name: 'Nitro Gold Whey Isolate',
+    brand: 'NITROGEN',
+    category: 'protein',
+    price: 7500,
+    originalPrice: 9500,
+    image: '/products/whey.png',
+    rating: 4.8,
+    reviewsCount: 1240,
+    description: 'Ultra-pure whey protein isolate engineered for fast absorption and maximum muscle recovery. Pure performance in every scoop.',
+    features: ['25g Protein per serving', '0g Added Sugar', '5.5g BCAAs', 'Lactose Free'],
+    nutritionFacts: [
+      { label: 'Calories', value: '120' },
+      { label: 'Total Fat', value: '1g' },
+      { label: 'Total Carb', value: '2g' },
+      { label: 'Protein', value: '25g' }
+    ],
+    ingredients: ['Whey Protein Isolate', 'Natural Flavors', 'Soy Lecithin', 'Sucralose'],
+    usage: 'Mix 1 scoop with 200ml of cold water or milk. Consume post-workout or anytime you need a protein boost.',
+    goal: 'muscle-gain',
+    flavors: ['Gourmet Chocolate', 'Vanilla Bean', 'Cookies & Cream'],
+    sizes: ['1kg', '2kg'],
+    isBestSeller: true
+  },
+  {
+    id: '2',
+    name: 'Arc Creatine Monohydrate',
+    brand: 'PHANTOM',
+    category: 'creatine',
+    price: 2900,
+    image: '/products/creatine.png',
+    rating: 4.9,
+    reviewsCount: 850,
+    description: 'Pharmaceutical grade micronized creatine for explosive power, increased strength and muscle hydration.',
+    features: ['5g Pure Creatine per serving', 'Micronized for solubility', 'No fillers or additives'],
+    nutritionFacts: [
+      { label: 'Creatine Monohydrate', value: '5000mg' }
+    ],
+    ingredients: ['100% Micronized Creatine Monohydrate'],
+    usage: 'Mix 1 scoop (5g) with water or your favorite beverage. Use daily.',
+    goal: 'energy',
+    flavors: ['Unflavored'],
+    sizes: ['300g', '600g'],
+    isBestSeller: true
+  },
+  {
+    id: '3',
+    name: 'Vortex Pre-Workout Engine',
+    brand: 'TITAN',
+    category: 'pre-workout',
+    price: 4100,
+    originalPrice: 5100,
+    image: '/products/preworkout.png',
+    rating: 4.7,
+    reviewsCount: 420,
+    description: 'High-stimulant pre-workout designed for laser focus, intense pumps and sustained energy without the crash.',
+    features: ['300mg Caffeine', '3.2g Beta-Alanine', '6g L-Citrulline', 'Focus Matrix'],
+    nutritionFacts: [
+      { label: 'Caffeine', value: '300mg' },
+      { label: 'L-Citrulline', value: '6000mg' },
+      { label: 'Beta-Alanine', value: '3200mg' }
+    ],
+    ingredients: ['L-Citrulline', 'Beta-Alanine', 'Caffeine Anhydrous', 'L-Tyrosine', 'Lion\'s Mane Extract'],
+    usage: 'Mix 1/2 to 1 scoop with 250ml water 20-30 minutes before training.',
+    goal: 'energy',
+    flavors: ['Blue Raspberry', 'Electric Lime', 'Fruit Punch'],
+    sizes: ['30 Servings'],
+    isNew: true
+  },
+  {
+    id: '4',
+    name: 'Titan Mass Gainer XL',
+    brand: 'TITAN',
+    category: 'gainer',
+    price: 6200,
+    image: '/products/gainer.png',
+    rating: 4.6,
+    reviewsCount: 310,
+    description: 'Massive calorie formula designed for hardgainers looking to pack on serious size and weight.',
+    features: ['1200 Calories', '50g Protein', '250g Carbs', 'Added Creatine'],
+    nutritionFacts: [
+      { label: 'Calories', value: '1250' },
+      { label: 'Protein', value: '50g' },
+      { label: 'Carbs', value: '252g' },
+      { label: 'Fat', value: '4g' }
+    ],
+    ingredients: ['Maltodextrin', 'Protein Blend', 'Creatine', 'Vitamin Matrix'],
+    usage: 'Mix 2 scoops with 700ml water or milk. Use as a snack between meals or post-workout.',
+    goal: 'muscle-gain',
+    flavors: ['Chocolate Smash', 'Strawberry Cream'],
+    sizes: ['2.7kg', '5.4kg'],
+    isBestSeller: false
+  },
+  {
+    id: '5',
+    name: 'Alpha Vital Multi-Vitamin',
+    brand: 'VITALITY',
+    category: 'vitamins',
+    price: 2100,
+    image: '/products/vitamins.png',
+    rating: 4.8,
+    reviewsCount: 156,
+    description: 'Comprehensive daily micronutrients designed for the high demands of athletes.',
+    features: ['25+ Vitamins & Minerals', 'Digestive Enzymes', 'Antioxidant Support'],
+    nutritionFacts: [
+      { label: 'Vitamin A', value: '5000 IU' },
+      { label: 'Vitamin C', value: '250 mg' },
+      { label: 'Magnesium', value: '100 mg' }
+    ],
+    ingredients: ['Vitamin Blend', 'Mineral Blend', 'Enzyme Complex'],
+    usage: 'Take 2 capsules daily with a meal.',
+    goal: 'recovery',
+    flavors: ['Unflavored Capsules'],
+    sizes: ['60 Capsules', '120 Capsules'],
+    isBestSeller: false
+  },
+  {
+    id: '6',
+    name: 'E-Lite Essential Aminos',
+    brand: 'NITROGEN',
+    category: 'pre-workout',
+    price: 3800,
+    image: '/products/aminos.png',
+    rating: 4.9,
+    reviewsCount: 88,
+    description: 'Full spectrum EAA formula with electrolytes for hydration and intra-workout endurance.',
+    features: ['9 Essential Aminos', 'Hydration Matrix', 'Zero Sugar'],
+    nutritionFacts: [
+      { label: 'EAA Blend', value: '7g' },
+      { label: 'Electrolytes', value: '500mg' }
+    ],
+    ingredients: ['L-Leucine', 'L-Isoleucine', 'L-Valine', 'Electrolytes', 'Coconut Water Powder'],
+    usage: 'Mix 1 scoop in 500ml water and sip throughout your training.',
+    goal: 'recovery',
+    flavors: ['Watermelon', 'Lemon Lime'],
+    sizes: ['30 Servings'],
+    isNew: false
+  }
+];
