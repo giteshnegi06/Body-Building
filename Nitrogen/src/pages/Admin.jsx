@@ -38,6 +38,7 @@ const INITIAL_FORM = {
   featured: false,
   bestSeller: false,
   isNew: false,
+  isOutOfStock: false,
 };
 
 // Auto-generate a unique SKU
@@ -148,6 +149,7 @@ export default function Admin() {
       featured: product.featured || false,
       bestSeller: product.bestSeller || false,
       isNew: product.isNew || false,
+      isOutOfStock: product.isOutOfStock || false,
     });
     setShowAddModal(true);
     setSubmitStatus(null);
@@ -189,11 +191,12 @@ export default function Admin() {
         description:      form.description || form.shortDescription || form.title,
         usageInstructions: form.usageInstructions || undefined,
         // Media — store as images array
-        images:           form.imageUrl ? [form.imageUrl] : [],
+        images:           splitTrim(form.imageUrl),
         // Flags
         featured:         form.featured,
         bestSeller:       form.bestSeller,
         isNew:            form.isNew,
+        isOutOfStock:     form.isOutOfStock,
       };
 
       // Remove undefined keys to avoid Mongoose validators firing
@@ -405,7 +408,7 @@ export default function Admin() {
                         <td className="py-4">
                           <span className={cn(
                             'font-bold text-sm',
-                            product.stock === 0 ? 'text-red-400' : product.stock < 10 ? 'text-yellow-400' : 'text-neon-lime'
+                            (product.isOutOfStock || product.stock === 0) ? 'text-red-400' : product.stock < 10 ? 'text-yellow-400' : 'text-neon-lime'
                           )}>
                             {product.stock ?? 0}
                           </span>
@@ -414,11 +417,11 @@ export default function Admin() {
                         <td className="py-4">
                           <span className={cn(
                             'px-2 py-1 text-[9px] font-bold uppercase tracking-widest border rounded',
-                            product.stock > 0
+                            (!product.isOutOfStock && product.stock > 0)
                               ? 'bg-green-500/10 text-green-400 border-green-500/20'
                               : 'bg-red-500/10 text-red-400 border-red-500/20'
                           )}>
-                            {product.stock > 0 ? 'In Stock' : 'Out of Stock'}
+                            {(!product.isOutOfStock && product.stock > 0) ? 'In Stock' : 'Out of Stock'}
                           </span>
                         </td>
                         <td className="py-4 text-right px-4 flex justify-end gap-2">
@@ -642,10 +645,10 @@ export default function Admin() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-widest text-white/40 mb-2">Product Image URL</label>
+                      <label className="block text-[10px] font-bold uppercase tracking-widest text-white/40 mb-2">Product Image URLs (comma-separated)</label>
                       <input name="imageUrl" value={form.imageUrl} onChange={handleFormChange}
                         className="w-full bg-matte-black border border-white/10 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-neon-lime transition-colors"
-                        placeholder="https://... or /products/whey.png" />
+                        placeholder="https://image1.png, https://image2.png" />
                     </div>
                   </div>
                 </div>
@@ -748,7 +751,7 @@ export default function Admin() {
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neon-lime mb-4">⑥ Labels & Flags</p>
                   <div className="flex flex-wrap gap-4">
-                    {[['featured','Featured'],['bestSeller','Best Seller'],['isNew','New Arrival']].map(([key, label]) => (
+                    {[['featured','Featured'],['bestSeller','Best Seller'],['isNew','New Arrival'],['isOutOfStock','Out of Stock']].map(([key, label]) => (
                       <label key={key} className="flex items-center gap-3 cursor-pointer">
                         <div
                           onClick={() => setForm(p => ({ ...p, [key]: !p[key] }))}

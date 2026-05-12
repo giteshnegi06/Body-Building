@@ -1,21 +1,69 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import axiosClient from '../api/axiosClient';
+import { useAuth } from './AuthContext';
+
 const CartContext = createContext(undefined);
 
 export const CartProvider = ({ children }) => {
   const [cart, setCart] = useState([]);
 
-  // Load cart from localStorage
-  useEffect(() => {
-    const savedCart = localStorage.getItem('cart');
-    if (savedCart) {
-      setCart(JSON.parse(savedCart));
-    }
-  }, []);
+  const { isAuthenticated } = useAuth();
 
-  // Save cart to localStorage
+  // Load cart from localStorage or backend
+  useEffect(() => {
+    const loadCart = async () => {
+      if (isAuthenticated) {
+        try {
+          const response = await axiosClient.get('/users/cart');
+          const backendCart = response.data.data.cart;
+          // Map backend cart to frontend structure
+          const flatCart = backendCart
+            .filter(item => item.product) // Filter out null products
+            .map(item => ({
+              ...item.product,
+              id: item.product._id,
+              selectedFlavor: item.flavor,
+              selectedSize: item.size,
+              quantity: item.quantity
+            }));
+          setCart(flatCart);
+        } catch (error) {
+          console.error('Failed to fetch cart from backend', error);
+        }
+      } else {
+        const savedCart = localStorage.getItem('cart');
+        if (savedCart) {
+          setCart(JSON.parse(savedCart));
+        } else {
+          setCart([]);
+        }
+      }
+    };
+    loadCart();
+  }, [isAuthenticated]);
+
+  // Save cart to localStorage and backend
   useEffect(() => {
     localStorage.setItem('cart', JSON.stringify(cart));
-  }, [cart]);
+    
+    const saveCartToBackend = async () => {
+      if (isAuthenticated) {
+        try {
+          const backendCart = cart.map(item => ({
+            product: item.id || item._id,
+            quantity: item.quantity,
+            flavor: item.selectedFlavor,
+            size: item.selectedSize
+          }));
+          await axiosClient.patch('/users/cart', { cart: backendCart });
+        } catch (error) {
+          console.error('Failed to save cart to backend', error);
+        }
+      }
+    };
+    
+    saveCartToBackend();
+  }, [cart, isAuthenticated]);
 
   const addToCart = (product, flavor, size, quantity) => {
     setCart((prev) => {

@@ -32,6 +32,7 @@ const normalise = (p) => ({
   isBestSeller:  p.isBestSeller || p.bestSeller || false,
   isNew:         p.isNew || false,
   stock:         p.stock ?? 99,
+  isOutOfStock:  p.isOutOfStock || false,
   flavors:       p.flavor || p.flavors || [],
   sizes:         p.weight || p.sizes || [],
   description:   p.description || p.shortDescription || '',
@@ -52,6 +53,8 @@ export default function ProductDetails() {
   const [selectedSize, setSelectedSize] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState('info');
+  const [showNotifyEmail, setShowNotifyEmail] = useState(false);
+  const [notifyEmail, setNotifyEmail] = useState('');
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -226,38 +229,82 @@ export default function ProductDetails() {
                        <span className="w-12 text-center font-display font-bold text-xl">{quantity}</span>
                        <button onClick={() => setQuantity(quantity + 1)} className="p-3 hover:text-neon-lime"><Plus size={16} /></button>
                     </div>
-                    <div className="text-white/30 text-xs font-bold uppercase tracking-widest">In Stock & Ready</div>
+                    <div className="text-white/30 text-xs font-bold uppercase tracking-widest">
+                      {product.isOutOfStock || product.stock === 0 ? 'Out of Stock' : 'In Stock & Ready'}
+                    </div>
                  </div>
               </div>
             </div>
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 mb-16">
-              <button 
-                onClick={() => addToCart(product, selectedFlavor, selectedSize, quantity)}
-                className="flex-1 py-5 bg-neon-lime text-matte-black font-bold uppercase tracking-widest flex items-center justify-center space-x-3 hover:shadow-[0_0_40px_rgba(204,255,0,0.3)] transition-all"
-              >
-                <ShoppingCart size={20} />
-                <span>Add to Stack</span>
-              </button>
-              <button
-                onClick={() => navigate('/checkout', {
-                  state: {
-                    buyNowItem: {
-                      id: product.id,
-                      name: product.name,
-                      price: product.discountPrice || product.price,
-                      image: product.image,
-                      quantity,
-                      selectedFlavor,
-                      selectedSize,
-                    }
-                  }
-                })}
-                className="flex-1 py-5 bg-soft-white text-matte-black font-bold uppercase tracking-widest flex items-center justify-center space-x-3 hover:bg-white transition-all"
-              >
-                <span>Buy Now</span>
-              </button>
+              {product.isOutOfStock || product.stock === 0 ? (
+                <>
+                  <button 
+                    disabled
+                    className="flex-1 py-5 bg-neon-lime/20 text-white/20 font-bold uppercase tracking-widest flex items-center justify-center space-x-3 cursor-not-allowed border border-white/5"
+                  >
+                    <ShoppingCart size={20} />
+                    <span>Out of Stock</span>
+                  </button>
+                  {showNotifyEmail ? (
+                    <div className="flex-1 flex gap-2">
+                      <input 
+                        type="email" 
+                        value={notifyEmail} 
+                        onChange={(e) => setNotifyEmail(e.target.value)} 
+                        placeholder="Enter your email" 
+                        className="flex-1 bg-graphite border border-white/10 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-neon-lime transition-colors text-white" 
+                      />
+                      <button 
+                        onClick={() => {
+                          alert(`Will notify ${notifyEmail} when back in stock!`);
+                          setShowNotifyEmail(false);
+                          setNotifyEmail('');
+                        }} 
+                        className="px-6 py-2 bg-neon-lime text-matte-black font-bold uppercase text-xs tracking-widest hover:bg-white transition-colors"
+                      >
+                        Submit
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setShowNotifyEmail(true)}
+                      className="flex-1 py-5 bg-soft-white text-matte-black font-bold uppercase tracking-widest flex items-center justify-center space-x-3 hover:bg-white transition-all"
+                    >
+                      <span>Notify Me</span>
+                    </button>
+                  )}
+                </>
+              ) : (
+                <>
+                  <button 
+                    onClick={() => addToCart(product, selectedFlavor, selectedSize, quantity)}
+                    className="flex-1 py-5 bg-neon-lime text-matte-black font-bold uppercase tracking-widest flex items-center justify-center space-x-3 hover:shadow-[0_0_40px_rgba(204,255,0,0.3)] transition-all"
+                  >
+                    <ShoppingCart size={20} />
+                    <span>Add to Stack</span>
+                  </button>
+                  <button
+                    onClick={() => navigate('/checkout', {
+                      state: {
+                        buyNowItem: {
+                          id: product.id,
+                          name: product.name,
+                          price: product.discountPrice || product.price,
+                          image: product.image,
+                          quantity,
+                          selectedFlavor,
+                          selectedSize,
+                        }
+                      }
+                    })}
+                    className="flex-1 py-5 bg-soft-white text-matte-black font-bold uppercase tracking-widest flex items-center justify-center space-x-3 hover:bg-white transition-all"
+                  >
+                    <span>Buy Now</span>
+                  </button>
+                </>
+              )}
             </div>
 
             {/* Trust Badges */}

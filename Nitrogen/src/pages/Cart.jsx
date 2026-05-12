@@ -41,7 +41,10 @@ export default function Cart() {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="flex flex-col sm:flex-row items-center bg-graphite rounded-2xl p-6 relative group overflow-hidden border border-white/5"
+                    className={cn(
+                      "flex flex-col sm:flex-row items-center bg-graphite rounded-2xl p-6 relative group overflow-hidden border",
+                      (item.isOutOfStock || item.stock === 0) ? "border-red-500/30 bg-red-500/5" : "border-white/5"
+                    )}
                   >
                     <div className="w-full sm:w-32 aspect-square rounded-xl overflow-hidden mb-6 sm:mb-0 sm:mr-8 bg-matte-black">
                       <img src={item.image} alt={item.name} className="w-full h-full object-cover grayscale" />
@@ -55,7 +58,11 @@ export default function Cart() {
                       <div className="flex flex-wrap justify-center sm:justify-start gap-4 text-[10px] font-bold uppercase tracking-widest text-white/40 mb-6">
                         <span className="bg-white/5 px-2 py-1 rounded">{item.selectedFlavor}</span>
                         <span className="bg-white/5 px-2 py-1 rounded">{item.selectedSize}</span>
-                        <span className="bg-neon-lime/10 text-neon-lime px-2 py-1 rounded">In Stock</span>
+                        {(item.isOutOfStock || item.stock === 0) ? (
+                          <span className="bg-red-500/10 text-red-400 px-2 py-1 rounded">Out of Stock</span>
+                        ) : (
+                          <span className="bg-neon-lime/10 text-neon-lime px-2 py-1 rounded">In Stock</span>
+                        )}
                       </div>
                       
                       <div className="flex flex-col sm:flex-row items-center justify-between gap-6">

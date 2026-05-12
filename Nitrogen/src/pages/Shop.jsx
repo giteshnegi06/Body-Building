@@ -33,6 +33,7 @@ const normalise = (p) => ({
   bestSeller:    p.bestSeller || false,
   isBestSeller:  p.isBestSeller || p.bestSeller || false,
   isNew:         p.isNew || false,
+  isOutOfStock:  p.isOutOfStock || p.stock === 0 || false,
   stock:         p.stock ?? 99,
   flavors:       p.flavor || p.flavors || [],
   sizes:         p.weight || p.sizes || [],
