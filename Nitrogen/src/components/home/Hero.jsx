@@ -45,12 +45,12 @@ export default function Hero() {
                 Shop Now
                 <ArrowRight size={20} className="ml-2 group-hover:translate-x-1 transition-transform" />
               </Link>
-              <button className="w-full sm:w-auto flex items-center justify-center space-x-3 group px-6 py-4 hover:bg-white/5 transition-colors">
+              {/* <button className="w-full sm:w-auto flex items-center justify-center space-x-3 group px-6 py-4 hover:bg-white/5 transition-colors">
                 <div className="w-12 h-12 rounded-full border border-white/20 flex items-center justify-center group-hover:border-neon-lime transition-colors">
                   <Play size={20} fill="white" className="ml-1 group-hover:fill-neon-lime transition-colors" />
                 </div>
                 <span className="font-bold uppercase tracking-widest text-sm">Watch Stories</span>
-              </button>
+              </button> */}
             </div>
           </motion.div>
         </div>
