@@ -358,6 +358,9 @@ export default function Shop() {
                 {/* Grid Row */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 pt-6 border-t border-white/5">
                   <div>
+                    <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40 mb-2">
+                      Featured
+                    </h3>
                     <select
                       value={sortBy}
                       onChange={(e) => setSortBy(e.target.value)}
