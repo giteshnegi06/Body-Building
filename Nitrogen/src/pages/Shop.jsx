@@ -422,7 +422,7 @@ export default function Shop() {
                       <option value="energy">Energy</option>
                     </select>
                   </div>
-                  <div>
+                  {/* <div>
                     <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40 mb-2">
                       Availability
                     </h3>
@@ -436,7 +436,7 @@ export default function Shop() {
                       <option value="out-of-stock">Out of Stock</option>
                     </select>
                   </div>
-                </div>
+                </div> */}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 pt-6">
                   <div>
