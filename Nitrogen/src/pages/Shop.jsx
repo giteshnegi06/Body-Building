@@ -95,6 +95,21 @@ export default function Shop() {
   const [availability, setAvailability] = useState("all");
   const [showFeaturedOnly, setShowFeaturedOnly] = useState(false);
 
+  const resetAllFilters = () => {
+    setActiveCategory("all");
+    setSearchQuery("");
+    setSortBy("featured");
+    setPriceRange([0, 10000]);
+    setSelectedFlavor("all");
+    setSelectedBrand("all");
+    setMinRating(0);
+    setSelectedGoal("all");
+    setDietary("all");
+    setMinProtein(0);
+    setAvailability("all");
+    setShowFeaturedOnly(false);
+  };
+
   const fetchProducts = async () => {
     setLoading(true);
     setError("");
@@ -469,6 +484,16 @@ export default function Shop() {
                     ))}
                   </select>
                 </div>
+
+                {/* Reset All Filters */}
+                <div className="pt-4 border-t border-white/5 flex justify-end">
+                  <button
+                    onClick={resetAllFilters}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-white/5 hover:bg-red-500/10 hover:text-red-400 border border-white/10 hover:border-red-500/20 text-white/50 text-xs font-bold uppercase tracking-widest rounded-lg transition-all"
+                  >
+                    <X size={14} /> Reset All Filters
+                  </button>
+                </div>
               </div>
             </motion.div>
           )}
@@ -481,12 +506,12 @@ export default function Shop() {
               ? "Loading..."
               : `${filteredProducts.length} products found`}
           </p>
-          {activeCategory !== "all" && (
+          {(activeCategory !== "all" || searchQuery || priceRange[1] < 10000 || selectedFlavor !== "all" || selectedBrand !== "all" || minRating > 0 || selectedGoal !== "all" || dietary !== "all" || minProtein > 0 || availability !== "all" || showFeaturedOnly) && (
             <button
-              onClick={() => setActiveCategory("all")}
+              onClick={resetAllFilters}
               className="flex items-center gap-1 text-xs text-neon-lime hover:underline"
             >
-              <X size={12} /> Clear filter
+              <X size={12} /> Reset all filters
             </button>
           )}
         </div>
@@ -509,10 +534,7 @@ export default function Shop() {
               Try adjusting your filters or search query.
             </p>
             <button
-              onClick={() => {
-                setActiveCategory("all");
-                setSearchQuery("");
-              }}
+              onClick={resetAllFilters}
               className="mt-6 px-6 py-3 bg-neon-lime text-matte-black font-bold uppercase text-xs tracking-widest rounded-xl"
             >
               Reset Filters
