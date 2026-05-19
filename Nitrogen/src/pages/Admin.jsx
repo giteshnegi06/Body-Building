@@ -427,7 +427,7 @@ export default function Admin() {
                       <tr key={product._id} className="group hover:bg-white/5 transition-colors">
                         <td className="py-4 px-4">
                           <div className="flex items-center space-x-3">
-                            <div className="w-12 h-12 bg-matte-black rounded-lg overflow-hidden border border-white/10 flex-shrink-0 flex items-center justify-center">
+                            <div className="w-12 h-12 bg-matte-black rounded-lg overflow-hidden border border-white/10 shrink-0 flex items-center justify-center">
                               {product.images?.[0]
                                 ? <img src={product.images[0]} alt="" className="w-full h-full object-cover" />
                                 : <Package size={20} className="text-white/20" />
@@ -512,7 +512,7 @@ export default function Admin() {
                   ))}
                 </div>
               </div>
-              <div className="bg-graphite border border-white/5 p-6 rounded-2xl flex flex-col items-center justify-center min-h-[300px]">
+              <div className="bg-graphite border border-white/5 p-6 rounded-2xl flex flex-col items-center justify-center min-h-75">
                 <BarChart3 size={48} className="text-white/10 mb-4" />
                 <p className="text-white/40 text-sm uppercase tracking-widest font-bold">Revenue Graph</p>
                 <p className="text-xs text-white/20 mt-2">Connecting to analytics engine...</p>
@@ -537,6 +537,7 @@ export default function Admin() {
                     <tr className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30 border-b border-white/5 bg-white/5">
                       <th className="p-4">Order ID</th>
                       <th className="p-4">Customer</th>
+                      <th className="p-4">Items</th>
                       <th className="p-4">Amount</th>
                       <th className="p-4">Status</th>
                       <th className="p-4 text-right">Actions</th>
@@ -547,6 +548,25 @@ export default function Admin() {
                       <tr key={order._id} className="hover:bg-white/5 transition-colors">
                         <td className="p-4 text-sm font-mono text-neon-lime">{order._id.slice(-8).toUpperCase()}</td>
                         <td className="p-4 text-sm font-bold text-soft-white">{order.user?.name || 'Guest'}</td>
+                        <td className="p-4">
+                          <div className="space-y-1">
+                            {(order.products || order.orderItems)?.slice(0, 2).map((item, i) => (
+                              <div key={i} className="flex items-center gap-1.5 flex-wrap">
+                                <span className="text-xs text-soft-white font-bold truncate max-w-30">{item.name || 'Item'}</span>
+                                {item.size && (
+                                  <span className="text-[9px] font-bold uppercase tracking-widest bg-neon-lime/10 text-neon-lime border border-neon-lime/20 px-1.5 py-0.5 rounded whitespace-nowrap">{item.size}</span>
+                                )}
+                                {item.flavor && (
+                                  <span className="text-[9px] font-bold uppercase tracking-widest bg-white/5 text-white/50 border border-white/10 px-1.5 py-0.5 rounded whitespace-nowrap">{item.flavor}</span>
+                                )}
+                                <span className="text-[9px] text-white/30">×{item.quantity}</span>
+                              </div>
+                            ))}
+                            {(order.products || order.orderItems)?.length > 2 && (
+                              <p className="text-[9px] text-white/30">+{(order.products || order.orderItems).length - 2} more</p>
+                            )}
+                          </div>
+                        </td>
                         <td className="p-4 text-sm">₹{order.totalPrice?.toLocaleString('en-IN')}</td>
                         <td className="p-4">
                           <div className="flex flex-col gap-1 items-start">
@@ -807,7 +827,7 @@ export default function Admin() {
                        return (
                          <div key={idx} className="flex justify-between items-center bg-matte-black p-3 rounded-lg border border-white/5">
                            <div className="flex items-center gap-3">
-                             <div className="w-10 h-10 bg-white/5 rounded flex-shrink-0 flex items-center justify-center overflow-hidden">
+                             <div className="w-10 h-10 bg-white/5 rounded shrink-0 flex items-center justify-center overflow-hidden">
                                {itemImg ? (
                                  <img src={itemImg} alt={itemName} className="w-full h-full object-cover rounded" />
                                ) : (
@@ -815,8 +835,12 @@ export default function Admin() {
                                )}
                              </div>
                              <div>
-                               <p className="text-sm font-bold truncate max-w-[200px]">{itemName}</p>
-                               <p className="text-xs text-white/40">Qty: {item.quantity} {item.flavor ? `| ${item.flavor}` : ''}</p>
+                               <p className="text-sm font-bold truncate max-w-50">{itemName}</p>
+                               <p className="text-xs text-white/40 flex items-center flex-wrap gap-1.5">
+                                 <span>Qty: {item.quantity}</span>
+                                 {item.size && <span className="bg-neon-lime/10 text-neon-lime border border-neon-lime/20 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest">{item.size}</span>}
+                                 {item.flavor && <span className="bg-white/5 text-white/50 border border-white/10 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest">{item.flavor}</span>}
+                               </p>
                              </div>
                            </div>
                            <p className="text-sm font-bold">₹{item.price?.toLocaleString('en-IN')}</p>
@@ -863,7 +887,7 @@ export default function Admin() {
               <div className="p-6 space-y-8">
                 {/* Core Profile Info */}
                 <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
-                  <div className="w-20 h-20 bg-neon-lime/10 text-neon-lime rounded-full flex items-center justify-center font-bold text-4xl flex-shrink-0">
+                  <div className="w-20 h-20 bg-neon-lime/10 text-neon-lime rounded-full flex items-center justify-center font-bold text-4xl shrink-0">
                     {selectedCustomer.name?.[0]?.toUpperCase() || 'U'}
                   </div>
                   <div className="flex-1">

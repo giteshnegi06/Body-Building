@@ -110,11 +110,11 @@ export default function Dashboard() {
       <div className="max-w-6xl mx-auto px-4 md:px-8">
 
         {/* Hero Banner */}
-        <div className="relative rounded-3xl overflow-hidden mb-10 bg-gradient-to-br from-graphite via-graphite/80 to-matte-black border border-white/5">
+        <div className="relative rounded-3xl overflow-hidden mb-10 bg-linear-to-br from-graphite via-graphite/80 to-matte-black border border-white/5">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(198,241,53,0.15),transparent_60%)]" />
           <div className="relative p-8 md:p-10 flex flex-col sm:flex-row items-center gap-6">
             {/* Avatar */}
-            <div className="relative group flex-shrink-0">
+            <div className="relative group shrink-0">
               <div className="w-24 h-24 rounded-2xl bg-neon-lime flex items-center justify-center text-matte-black text-3xl font-black border-4 border-neon-lime/30">
                 {initials}
               </div>
@@ -355,16 +355,22 @@ export default function Dashboard() {
                         <div className="space-y-3 border-t border-white/5 pt-4">
                           {order.products?.slice(0, 3).map((item, i) => (
                             <div key={i} className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-matte-black rounded-lg border border-white/10 flex-shrink-0 flex items-center justify-center">
+                              <div className="w-10 h-10 bg-matte-black rounded-lg border border-white/10 shrink-0 flex items-center justify-center">
                                 <Package size={14} className="text-white/20" />
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm font-bold truncate">{item.name}</p>
-                                <p className="text-[10px] text-white/40">
-                                  {item.flavor && `${item.flavor} · `}Qty: {item.quantity}
+                                <p className="text-[10px] text-white/40 flex flex-wrap items-center gap-1.5">
+                                  {item.size && (
+                                    <span className="bg-neon-lime/10 text-neon-lime border border-neon-lime/20 px-1.5 py-0.5 rounded font-bold uppercase tracking-widest">{item.size}</span>
+                                  )}
+                                  {item.flavor && item.flavor !== 'Unflavored' && (
+                                    <span className="bg-white/5 text-white/50 border border-white/10 px-1.5 py-0.5 rounded font-bold uppercase tracking-widest">{item.flavor}</span>
+                                  )}
+                                  <span>Qty: {item.quantity}</span>
                                 </p>
                               </div>
-                              <p className="text-sm font-bold flex-shrink-0">
+                              <p className="text-sm font-bold shrink-0">
                                 ₹{(item.price * item.quantity).toLocaleString('en-IN')}
                               </p>
                             </div>
@@ -402,7 +408,7 @@ export default function Dashboard() {
                   className="space-y-6"
                 >
                   {/* Hero Card */}
-                  <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-neon-lime/20 to-neon-lime/5 border border-neon-lime/20 p-8 text-center">
+                  <div className="relative rounded-2xl overflow-hidden bg-linear-to-br from-neon-lime/20 to-neon-lime/5 border border-neon-lime/20 p-8 text-center">
                     <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(198,241,53,0.1),transparent_70%)]" />
                     <div className="relative">
                       <div className="w-16 h-16 bg-neon-lime rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -443,7 +449,7 @@ export default function Dashboard() {
                         <p className="flex-1 text-xs text-white/50 font-mono truncate">{referralLink}</p>
                         <button
                           onClick={handleCopy}
-                          className="text-white/40 hover:text-neon-lime transition-colors flex-shrink-0"
+                          className="text-white/40 hover:text-neon-lime transition-colors shrink-0"
                         >
                           <Copy size={14} />
                         </button>
@@ -478,7 +484,7 @@ export default function Dashboard() {
                         { step: '03', title: 'Both get rewarded', desc: 'They get 10% off, you get ₹200 Nitrogen Credits!' },
                       ].map(({ step, title, desc }) => (
                         <div key={step} className="flex items-start gap-4">
-                          <div className="w-10 h-10 rounded-xl bg-neon-lime/10 border border-neon-lime/20 flex items-center justify-center flex-shrink-0">
+                          <div className="w-10 h-10 rounded-xl bg-neon-lime/10 border border-neon-lime/20 flex items-center justify-center shrink-0">
                             <span className="text-neon-lime font-display font-bold text-sm">{step}</span>
                           </div>
                           <div>
