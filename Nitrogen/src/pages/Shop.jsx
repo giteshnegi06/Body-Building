@@ -280,7 +280,7 @@ export default function Shop() {
           <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 w-full lg:w-auto">
             <button
               onClick={fetchProducts}
-              className="p-3 bg-graphite border border-white/5 rounded-lg hover:bg-white/5 transition-colors flex-shrink-0"
+              className="p-3 bg-graphite border border-white/5 rounded-lg hover:bg-white/5 transition-colors shrink-0"
               title="Refresh products"
             >
               <RefreshCw
