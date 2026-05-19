@@ -185,9 +185,9 @@ export default function Shop() {
           dietary === "all" ||
           (dietary === "veg"
             ? p.dietaryPreference?.toLowerCase() === "veg" ||
-              p.dietaryPreference?.toLowerCase() === "vegetarian"
+            p.dietaryPreference?.toLowerCase() === "vegetarian"
             : p.dietaryPreference?.toLowerCase() === "non-veg" ||
-              p.dietaryPreference?.toLowerCase() === "non-vegetarian");
+            p.dietaryPreference?.toLowerCase() === "non-vegetarian");
         const matchesProtein = p.proteinPerServing >= minProtein;
         const matchesAvailability =
           availability === "all" ||
@@ -358,6 +358,19 @@ export default function Shop() {
                 {/* Grid Row */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 pt-6 border-t border-white/5">
                   <div>
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value)}
+                      className="w-full bg-matte-black border border-white/10 rounded-lg p-2 text-xs focus:outline-none focus:border-neon-lime"
+                    >
+                      {SORT_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
                     <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40 mb-2">
                       Flavor
                     </h3>
@@ -472,17 +485,7 @@ export default function Shop() {
                       className="w-full accent-neon-lime mt-2"
                     />
                   </div>
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                    className="w-full bg-matte-black border border-white/10 rounded-lg p-2 text-xs focus:outline-none focus:border-neon-lime"
-                  >
-                    {SORT_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>
-                        {o.label}
-                      </option>
-                    ))}
-                  </select>
+
                 </div>
 
                 {/* Reset All Filters */}
