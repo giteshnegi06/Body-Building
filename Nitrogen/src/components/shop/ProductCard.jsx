@@ -109,6 +109,7 @@ export default function ProductCard({ product }) {
           <motion.img
             src={image}
             alt={name}
+            loading="lazy"
             className="w-full h-full object-cover scale-105 group-hover:scale-110 transition-transform duration-700 opacity-80 group-hover:opacity-100"
             onError={(e) => {
               e.target.style.display = "none";
