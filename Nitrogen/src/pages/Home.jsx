@@ -3,12 +3,43 @@ import { motion } from 'motion/react';
 import Hero from '../components/home/Hero';
 import ProductCard from '../components/shop/ProductCard';
 import { PRODUCTS } from '../data/products';
+import axiosClient from '../api/axiosClient';
 import { Shield, Sparkles, Zap, Award, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function Home() {
   const [email, setEmail] = useState('');
-  const bestSellers = PRODUCTS.filter(p => p.isBestSeller);
+  const [bestSellers, setBestSellers] = useState([]);
+
+  React.useEffect(() => {
+    const fetchBestSellers = async () => {
+      try {
+        const res = await axiosClient.get('/products?limit=8');
+        const apiProducts = res.data.data.products || [];
+        const best = apiProducts.filter(p => p.bestSeller || p.isBestSeller).map(p => ({
+          id: p._id || p.id,
+          name: p.title || p.name,
+          brand: p.brand || "Nitrogen",
+          price: p.discountPrice || p.price || 0,
+          originalPrice: p.originalPrice || (p.discountPrice && p.price > p.discountPrice ? p.price : null),
+          image: (p.images && p.images[0]) || p.image || null,
+          category: typeof p.category === "object" ? p.category?.slug || p.category?.name : p.category,
+          rating: p.ratings || p.rating || 4.5,
+          reviewsCount: p.reviewsCount || p.reviews || 0,
+          isNew: p.isNew || false,
+          isOutOfStock: p.isOutOfStock || p.stock === 0 || false,
+        }));
+        if (best.length > 0) {
+          setBestSellers(best);
+        } else {
+          setBestSellers(PRODUCTS.filter(p => p.isBestSeller));
+        }
+      } catch (error) {
+        setBestSellers(PRODUCTS.filter(p => p.isBestSeller));
+      }
+    };
+    fetchBestSellers();
+  }, []);
 
   return (
     <div className="bg-matte-black w-full overflow-x-hidden">
@@ -30,7 +61,7 @@ export default function Home() {
             { name: 'Pre-Workout', image: '/products/preworkout.png', desc: 'Focus & Energy' },
             { name: 'Vitamins', image: '/products/vitamins.png', desc: 'Health & Vitality' },
           ].map((cat, i) => (
-            <Link to="/shop" key={i} className="group relative h-[400px] overflow-hidden rounded-xl bg-graphite">
+            <Link to={`/shop?category=${cat.name.toLowerCase().replace(/\s+/g, '-')}`} key={i} className="group relative h-[400px] overflow-hidden rounded-xl bg-graphite">
               <img src={cat.image} alt={cat.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-50 grayscale group-hover:grayscale-0 group-hover:opacity-80" />
               <div className="absolute inset-0 bg-gradient-to-t from-matte-black via-matte-black/20 to-transparent" />
               <div className="absolute bottom-0 left-0 p-8 w-full">

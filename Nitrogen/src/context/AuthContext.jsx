@@ -48,8 +48,14 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
-    await axiosClient.get('/users/logout');
+    try {
+      await axiosClient.get('/users/logout');
+    } catch (err) {
+      console.error('Logout request failed', err);
+    }
     localStorage.removeItem('token');
+    localStorage.removeItem('cart');
+    localStorage.removeItem('wishlist');
     setUser(null);
     setIsAuthenticated(false);
   };

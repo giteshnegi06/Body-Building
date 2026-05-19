@@ -3,7 +3,7 @@ import {
   BarChart3, Package, Users, ShoppingBag, 
   Settings, LogOut, Bell, Search, Plus, 
   MoreVertical, TrendingUp, AlertCircle, X,
-  Save, Loader2, CheckCircle, Trash2, Edit3, RefreshCw
+  Save, Loader2, CheckCircle, Trash2, Edit3, RefreshCw, Star
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -33,12 +33,17 @@ const INITIAL_FORM = {
   description: '',
   usageInstructions: '',
   // Media
-  imageUrl: '',       // single image URL
+  imageUrl: '',       // comma-separated image URLs
   // Flags
   featured: false,
   bestSeller: false,
   isNew: false,
   isOutOfStock: false,
+  // New Additions
+  seoTitle: '',
+  seoDescription: '',
+  nutritionFactsText: '', // e.g. "Protein: 25g: 50%"
+  variantsText: '', // e.g. "1kg : 2000 : 1500" => weight:price:discountPrice
 };
 
 // Auto-generate a unique SKU
@@ -62,6 +67,28 @@ export default function Admin() {
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [customers, setCustomers] = useState([]);
   const [loadingCustomers, setLoadingCustomers] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [showOrderModal, setShowOrderModal] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [showCustomerModal, setShowCustomerModal] = useState(false);
+
+  const handleUpdateOrderStatus = async (orderId, updates) => {
+    try {
+      // Optimistically update
+      setOrders(prev => prev.map(o => o._id === orderId ? { ...o, ...updates } : o));
+      if (selectedOrder && selectedOrder._id === orderId) {
+        setSelectedOrder(prev => ({ ...prev, ...updates }));
+      }
+      await axiosClient.patch(`/orders/${orderId}/status`, updates);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to update order');
+    }
+  };
+
+  const handleGenerateInvoice = (order) => {
+    alert(`Generating invoice for Order #${order._id.slice(-8).toUpperCase()}...`);
+    // Placeholder logic for invoice generation
+  };
 
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -145,11 +172,15 @@ export default function Admin() {
       shortDescription: product.shortDescription || '',
       description: product.description || '',
       usageInstructions: product.usageInstructions || '',
-      imageUrl: product.images?.[0] || '',
+      imageUrl: product.images ? product.images.join(', ') : '',
       featured: product.featured || false,
       bestSeller: product.bestSeller || false,
       isNew: product.isNew || false,
       isOutOfStock: product.isOutOfStock || false,
+      seoTitle: product.metaTitle || '',
+      seoDescription: product.metaDescription || '',
+      nutritionFactsText: product.nutritionFacts ? product.nutritionFacts.map(n => `${n.label}:${n.amount}:${n.dailyValue || '-'}`).join('\n') : '',
+      variantsText: product.variants ? product.variants.map(v => `${v.weight}:${v.price}:${v.discountPrice || ''}`).join('\n') : '',
     });
     setShowAddModal(true);
     setSubmitStatus(null);
@@ -197,6 +228,19 @@ export default function Admin() {
         bestSeller:       form.bestSeller,
         isNew:            form.isNew,
         isOutOfStock:     form.isOutOfStock,
+        // SEO & Nutrition
+        metaTitle:        form.seoTitle || undefined,
+        metaDescription:  form.seoDescription || undefined,
+        nutritionFacts:   form.nutritionFactsText ? form.nutritionFactsText.split('\n').map(line => {
+          const parts = line.split(':').map(s => s.trim());
+          if (!parts[0]) return null;
+          return { label: parts[0], amount: parts[1] || '', dailyValue: parts[2] === '-' ? '' : (parts[2] || '') };
+        }).filter(Boolean) : undefined,
+        variants:         form.variantsText ? form.variantsText.split('\n').map(line => {
+          const parts = line.split(':').map(s => s.trim());
+          if (!parts[0]) return null;
+          return { weight: parts[0], price: Number(parts[1]) || 0, discountPrice: parts[2] ? Number(parts[2]) : undefined };
+        }).filter(Boolean) : undefined,
       };
 
       // Remove undefined keys to avoid Mongoose validators firing
@@ -254,6 +298,7 @@ export default function Admin() {
             { id: 'dashboard', label: 'Overview', icon: BarChart3 },
             { id: 'inventory', label: 'Inventory', icon: Package },
             { id: 'orders', label: 'Order Feed', icon: ShoppingBag },
+            { id: 'payments', label: 'Payments', icon: TrendingUp },
             { id: 'customers', label: 'User Base', icon: Users },
             { id: 'settings', label: 'System Config', icon: Settings },
           ].map((item) => (
@@ -494,6 +539,7 @@ export default function Admin() {
                       <th className="p-4">Customer</th>
                       <th className="p-4">Amount</th>
                       <th className="p-4">Status</th>
+                      <th className="p-4 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
@@ -503,12 +549,30 @@ export default function Admin() {
                         <td className="p-4 text-sm font-bold text-soft-white">{order.user?.name || 'Guest'}</td>
                         <td className="p-4 text-sm">₹{order.totalPrice?.toLocaleString('en-IN')}</td>
                         <td className="p-4">
-                          <span className={cn(
-                            "text-[10px] uppercase tracking-widest px-2 py-1 rounded border",
-                            order.paymentStatus === 'Completed' ? "bg-green-500/10 text-green-400 border-green-500/20" : "bg-white/5 text-white/60 border-white/10"
-                          )}>
-                            {order.paymentStatus || 'Pending'}
-                          </span>
+                          <div className="flex flex-col gap-1 items-start">
+                            <span className={cn(
+                              "text-[10px] uppercase tracking-widest px-2 py-1 rounded border whitespace-nowrap",
+                              order.paymentStatus === 'Completed' ? "bg-green-500/10 text-green-400 border-green-500/20" : order.paymentStatus === 'Refunded' ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/20" : "bg-white/5 text-white/60 border-white/10"
+                            )}>
+                              Pay: {order.paymentStatus || 'Pending'}
+                            </span>
+                            <span className={cn(
+                              "text-[10px] uppercase tracking-widest px-2 py-1 rounded border whitespace-nowrap",
+                              (order.orderStatus || order.status) === 'Delivered' ? "bg-neon-lime/10 text-neon-lime border-neon-lime/20" :
+                              (order.orderStatus || order.status) === 'Cancelled' ? "bg-red-500/10 text-red-400 border-red-500/20" : 
+                              "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                            )}>
+                              {(order.orderStatus || order.status) || 'Processing'}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="p-4 text-right">
+                           <button 
+                             onClick={() => { setSelectedOrder(order); setShowOrderModal(true); }} 
+                             className="text-xs font-bold text-neon-lime hover:text-white uppercase tracking-widest border border-neon-lime/20 hover:bg-neon-lime/10 px-3 py-1.5 rounded transition-colors"
+                           >
+                             Manage
+                           </button>
                         </td>
                       </tr>
                     ))}
@@ -532,18 +596,78 @@ export default function Admin() {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {customers.map((customer) => (
-                    <div key={customer._id} className="flex items-center gap-4 p-4 border border-white/5 rounded-xl bg-white/5">
-                      <div className="w-12 h-12 bg-neon-lime/10 text-neon-lime rounded-full flex items-center justify-center font-bold text-lg">
+                    <div 
+                      key={customer._id} 
+                      onClick={() => { setSelectedCustomer(customer); setShowCustomerModal(true); }}
+                      className="flex items-center gap-4 p-4 border border-white/5 rounded-xl bg-white/5 cursor-pointer hover:border-neon-lime/30 transition-all group"
+                    >
+                      <div className="w-12 h-12 bg-neon-lime/10 text-neon-lime rounded-full flex items-center justify-center font-bold text-lg group-hover:bg-neon-lime group-hover:text-matte-black transition-colors">
                         {customer.name?.[0]?.toUpperCase() || 'U'}
                       </div>
                       <div>
-                        <p className="font-bold text-sm">{customer.name}</p>
+                        <p className="font-bold text-sm group-hover:text-neon-lime transition-colors">{customer.name}</p>
                         <p className="text-xs text-white/40">{customer.email}</p>
                         <p className="text-[10px] text-white/20 mt-1 uppercase">Role: {customer.role}</p>
                       </div>
                     </div>
                   ))}
                 </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'payments' && (
+          <div className="space-y-6">
+            <h3 className="text-2xl font-display font-bold uppercase pb-6 border-b border-white/5">Payment Management</h3>
+            <div className="bg-graphite border border-white/5 rounded-2xl overflow-hidden">
+              {loadingOrders ? (
+                <div className="py-20 flex items-center justify-center"><Loader2 className="w-8 h-8 text-neon-lime animate-spin" /></div>
+              ) : orders.length === 0 ? (
+                <div className="py-20 text-center text-white/40">No transactions found.</div>
+              ) : (
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30 border-b border-white/5 bg-white/5">
+                      <th className="p-4">Transaction ID</th>
+                      <th className="p-4">Date</th>
+                      <th className="p-4">Gateway</th>
+                      <th className="p-4">Amount</th>
+                      <th className="p-4">Status</th>
+                      <th className="p-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {orders.map((order) => (
+                      <tr key={order._id} className="hover:bg-white/5 transition-colors">
+                        <td className="p-4 text-sm font-mono text-neon-lime">{order._id.slice(-8).toUpperCase()}</td>
+                        <td className="p-4 text-xs text-white/60">{new Date(order.createdAt).toLocaleDateString()}</td>
+                        <td className="p-4 text-sm font-bold text-soft-white">{order.paymentMethod || 'Unknown'}</td>
+                        <td className="p-4 text-sm">₹{order.totalPrice?.toLocaleString('en-IN')}</td>
+                        <td className="p-4">
+                          <span className={cn(
+                            "text-[10px] uppercase tracking-widest px-2 py-1 rounded border whitespace-nowrap",
+                            order.paymentStatus === 'Completed' ? "bg-green-500/10 text-green-400 border-green-500/20" : order.paymentStatus === 'Refunded' ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/20" : order.paymentStatus === 'Failed' ? "bg-red-500/10 text-red-400 border-red-500/20" : "bg-white/5 text-white/60 border-white/10"
+                          )}>
+                            {order.paymentStatus || 'Pending'}
+                          </span>
+                        </td>
+                        <td className="p-4 text-right">
+                          {order.paymentStatus !== 'Refunded' && (
+                            <button 
+                              onClick={() => {
+                                if(window.confirm("Process Refund for this transaction?")) handleUpdateOrderStatus(order._id, { paymentStatus: 'Refunded', status: 'Returned' });
+                              }} 
+                              className="text-xs font-bold text-yellow-400 hover:text-white uppercase tracking-widest border border-yellow-500/20 hover:bg-yellow-500/10 px-3 py-1.5 rounded transition-colors"
+                            >
+                              Refund
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               )}
             </div>
           </div>
@@ -577,6 +701,246 @@ export default function Admin() {
           </div>
         )}
       </main>
+
+      {/* Order Details Modal */}
+      <AnimatePresence>
+        {showOrderModal && selectedOrder && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={(e) => e.target === e.currentTarget && setShowOrderModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-graphite border border-white/10 rounded-2xl w-full max-w-2xl max-h-[92vh] overflow-y-auto"
+            >
+              <div className="flex items-center justify-between p-6 border-b border-white/10 sticky top-0 bg-graphite z-10">
+                <div>
+                  <h2 className="text-xl font-display font-bold uppercase tracking-widest">Order Details</h2>
+                  <p className="text-neon-lime font-mono text-sm uppercase mt-1">#{selectedOrder._id.slice(-8)}</p>
+                </div>
+                <button onClick={() => setShowOrderModal(false)} className="p-2 text-white/40 hover:text-white">
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-8">
+                {/* Order Status & Actions */}
+                <div>
+                  <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-neon-lime mb-4">Management Actions</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <button onClick={() => handleGenerateInvoice(selectedOrder)} className="flex flex-col items-center justify-center gap-2 p-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-colors">
+                      <Package size={20} className="text-white/60" />
+                      <span className="text-[10px] font-bold uppercase tracking-widest">Invoice</span>
+                    </button>
+                    <button onClick={() => {
+                       const tracking = prompt("Enter tracking number:");
+                       if (tracking) handleUpdateOrderStatus(selectedOrder._id, { trackingNumber: tracking, status: 'Shipped' });
+                    }} className="flex flex-col items-center justify-center gap-2 p-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-colors">
+                      <TrendingUp size={20} className="text-white/60" />
+                      <span className="text-[10px] font-bold uppercase tracking-widest">Tracking</span>
+                    </button>
+                    <button onClick={() => {
+                      if(window.confirm("Mark as Refunded?")) handleUpdateOrderStatus(selectedOrder._id, { paymentStatus: 'Refunded', status: 'Returned' });
+                    }} className="flex flex-col items-center justify-center gap-2 p-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-colors text-yellow-400">
+                      <RefreshCw size={20} />
+                      <span className="text-[10px] font-bold uppercase tracking-widest">Refund</span>
+                    </button>
+                    <button onClick={() => {
+                      if(window.confirm("Cancel this order?")) handleUpdateOrderStatus(selectedOrder._id, { status: 'Cancelled' });
+                    }} className="flex flex-col items-center justify-center gap-2 p-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-colors text-red-400">
+                      <X size={20} />
+                      <span className="text-[10px] font-bold uppercase tracking-widest">Cancel</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Status Update */}
+                <div>
+                  <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 mb-3">Order Status</h3>
+                  <select 
+                    value={(selectedOrder.orderStatus || selectedOrder.status) || 'Processing'} 
+                    onChange={(e) => handleUpdateOrderStatus(selectedOrder._id, { status: e.target.value, orderStatus: e.target.value })}
+                    className="w-full bg-matte-black border border-white/10 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-neon-lime transition-colors"
+                  >
+                    <option value="Processing">Processing</option>
+                    <option value="Shipped">Shipped</option>
+                    <option value="Delivered">Delivered</option>
+                    <option value="Cancelled">Cancelled</option>
+                    <option value="Returned">Returned / Refunded</option>
+                  </select>
+                </div>
+
+                {/* Tracking Info */}
+                {selectedOrder.trackingNumber && (
+                   <div>
+                     <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 mb-2">Tracking Info</h3>
+                     <p className="font-mono text-sm text-neon-lime">{selectedOrder.trackingNumber}</p>
+                   </div>
+                )}
+
+                {/* Customer Details */}
+                <div>
+                   <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 mb-2">Customer Info</h3>
+                   <div className="bg-matte-black p-4 rounded-lg border border-white/5 space-y-2">
+                     <p className="text-sm font-bold">{selectedOrder.user?.name || 'Guest'}</p>
+                     <p className="text-xs text-white/40">{selectedOrder.user?.email || 'N/A'}</p>
+                     {selectedOrder.shippingAddress && (
+                       <div className="mt-3 text-xs text-white/60">
+                         <p className="font-bold text-white/40 mb-1">Shipping Address:</p>
+                         <p>{selectedOrder.shippingAddress.street}</p>
+                         <p>{selectedOrder.shippingAddress.city}, {selectedOrder.shippingAddress.state} {selectedOrder.shippingAddress.zipCode}</p>
+                         <p>{selectedOrder.shippingAddress.country}</p>
+                       </div>
+                     )}
+                   </div>
+                </div>
+
+                {/* Order Items */}
+                <div>
+                   <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 mb-2">Items</h3>
+                   <div className="space-y-2">
+                     {(selectedOrder.products || selectedOrder.orderItems)?.map((item, idx) => {
+                       const itemName = item.name || item.product?.title || 'Unknown Product';
+                       const itemImg = item.image || item.product?.images?.[0];
+                       
+                       return (
+                         <div key={idx} className="flex justify-between items-center bg-matte-black p-3 rounded-lg border border-white/5">
+                           <div className="flex items-center gap-3">
+                             <div className="w-10 h-10 bg-white/5 rounded flex-shrink-0 flex items-center justify-center overflow-hidden">
+                               {itemImg ? (
+                                 <img src={itemImg} alt={itemName} className="w-full h-full object-cover rounded" />
+                               ) : (
+                                 <Package size={16} className="text-white/20" />
+                               )}
+                             </div>
+                             <div>
+                               <p className="text-sm font-bold truncate max-w-[200px]">{itemName}</p>
+                               <p className="text-xs text-white/40">Qty: {item.quantity} {item.flavor ? `| ${item.flavor}` : ''}</p>
+                             </div>
+                           </div>
+                           <p className="text-sm font-bold">₹{item.price?.toLocaleString('en-IN')}</p>
+                         </div>
+                       );
+                     })}
+                   </div>
+                </div>
+                
+                {/* Total */}
+                <div className="flex justify-between items-center pt-4 border-t border-white/5">
+                  <p className="font-bold text-white/40 uppercase tracking-widest text-xs">Total Amount</p>
+                  <p className="font-display font-bold text-2xl text-neon-lime">₹{selectedOrder.totalPrice?.toLocaleString('en-IN')}</p>
+                </div>
+
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Customer Details Modal */}
+      <AnimatePresence>
+        {showCustomerModal && selectedCustomer && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={(e) => e.target === e.currentTarget && setShowCustomerModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-graphite border border-white/10 rounded-2xl w-full max-w-2xl max-h-[92vh] overflow-y-auto"
+            >
+              <div className="flex items-center justify-between p-6 border-b border-white/10 sticky top-0 bg-graphite z-10">
+                <div>
+                  <h2 className="text-xl font-display font-bold uppercase tracking-widest">Customer Profile</h2>
+                  <p className="text-neon-lime font-mono text-sm uppercase mt-1">#{selectedCustomer._id.slice(-8)}</p>
+                </div>
+                <button onClick={() => setShowCustomerModal(false)} className="p-2 text-white/40 hover:text-white">
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-8">
+                {/* Core Profile Info */}
+                <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
+                  <div className="w-20 h-20 bg-neon-lime/10 text-neon-lime rounded-full flex items-center justify-center font-bold text-4xl flex-shrink-0">
+                    {selectedCustomer.name?.[0]?.toUpperCase() || 'U'}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-display font-bold text-2xl uppercase tracking-wider">{selectedCustomer.name}</p>
+                    <p className="text-sm text-white/60 mb-2">{selectedCustomer.email}</p>
+                    <span className="text-[10px] uppercase tracking-widest px-2 py-1 rounded border bg-white/5 border-white/10 text-white/60">Role: {selectedCustomer.role}</span>
+                  </div>
+                  {/* Loyalty Points Mock */}
+                  <div className="text-left md:text-right">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 mb-1">Loyalty Points</p>
+                    <p className="font-display font-bold text-2xl text-neon-lime flex items-center gap-2">
+                      <Star size={20} fill="currentColor" />
+                      {Math.floor(orders.filter(o => o.user?._id === selectedCustomer._id && o.paymentStatus === 'Completed').reduce((acc, curr) => acc + (curr.totalPrice || 0), 0) / 100)} pts
+                    </p>
+                  </div>
+                </div>
+
+                {/* Tracking & Activity */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-matte-black p-4 rounded-lg border border-white/5">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 mb-1">Account Created</p>
+                    <p className="text-sm font-bold">{new Date(selectedCustomer.createdAt).toLocaleDateString()}</p>
+                  </div>
+                  <div className="bg-matte-black p-4 rounded-lg border border-white/5">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 mb-1">Total Lifetime Spend</p>
+                    <p className="text-sm font-bold">₹{orders.filter(o => o.user?._id === selectedCustomer._id && o.paymentStatus === 'Completed').reduce((acc, curr) => acc + (curr.totalPrice || 0), 0).toLocaleString('en-IN')}</p>
+                  </div>
+                </div>
+
+                {/* Saved Addresses */}
+                <div>
+                   <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 mb-2">Saved Addresses</h3>
+                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                     {selectedCustomer.addresses?.length > 0 ? selectedCustomer.addresses.map((addr, idx) => (
+                       <div key={idx} className="bg-matte-black p-4 rounded-lg border border-white/5 space-y-1 relative">
+                         {addr.isDefault && <span className="absolute top-2 right-2 text-[8px] bg-neon-lime/20 text-neon-lime px-1.5 py-0.5 rounded uppercase font-bold tracking-widest">Default</span>}
+                         <p className="text-xs text-white/60">{addr.street}</p>
+                         <p className="text-xs text-white/60">{addr.city}, {addr.state} {addr.zipCode}</p>
+                         <p className="text-xs text-white/60">{addr.country}</p>
+                       </div>
+                     )) : (
+                       <p className="text-sm text-white/40 italic">No saved addresses.</p>
+                     )}
+                   </div>
+                </div>
+
+                {/* Customer Order History */}
+                <div>
+                   <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 mb-2">Order History</h3>
+                   <div className="space-y-2">
+                     {orders.filter(o => o.user?._id === selectedCustomer._id).length > 0 ? orders.filter(o => o.user?._id === selectedCustomer._id).map((order) => (
+                       <div key={order._id} className="flex justify-between items-center bg-matte-black p-4 rounded-lg border border-white/5">
+                         <div>
+                           <p className="font-mono text-sm text-neon-lime mb-1">#{order._id.slice(-8).toUpperCase()}</p>
+                           <p className="text-[10px] text-white/40">{new Date(order.createdAt).toLocaleDateString()}</p>
+                         </div>
+                         <div className="text-right">
+                           <p className="text-sm font-bold mb-1">₹{order.totalPrice?.toLocaleString('en-IN')}</p>
+                           <span className={cn(
+                              "text-[10px] uppercase tracking-widest px-2 py-0.5 rounded border whitespace-nowrap",
+                              order.paymentStatus === 'Completed' ? "bg-green-500/10 text-green-400 border-green-500/20" : "bg-white/5 text-white/60 border-white/10"
+                           )}>
+                             {order.paymentStatus}
+                           </span>
+                         </div>
+                       </div>
+                     )) : (
+                       <p className="text-sm text-white/40 italic">No previous orders.</p>
+                     )}
+                   </div>
+                </div>
+
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Add Product Modal */}
       <AnimatePresence>
@@ -644,11 +1008,11 @@ export default function Admin() {
                         {GOALS.map(g => <option key={g} value={g}>{g}</option>)}
                       </select>
                     </div>
-                    <div>
+                    <div className="md:col-span-2">
                       <label className="block text-[10px] font-bold uppercase tracking-widest text-white/40 mb-2">Product Image URLs (comma-separated)</label>
-                      <input name="imageUrl" value={form.imageUrl} onChange={handleFormChange}
-                        className="w-full bg-matte-black border border-white/10 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-neon-lime transition-colors"
-                        placeholder="https://image1.png, https://image2.png" />
+                      <textarea name="imageUrl" value={form.imageUrl} onChange={handleFormChange} rows={2}
+                        className="w-full bg-matte-black border border-white/10 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-neon-lime transition-colors resize-none"
+                        placeholder="https://image1.png, https://image2.png, https://image3.png" />
                     </div>
                   </div>
                 </div>
@@ -689,10 +1053,11 @@ export default function Admin() {
                         placeholder="Gourmet Chocolate, Vanilla Bean, Cookies & Cream" />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-widest text-white/40 mb-2">Sizes / Weights (comma-separated)</label>
-                      <input name="weight" value={form.weight} onChange={handleFormChange}
-                        className="w-full bg-matte-black border border-white/10 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-neon-lime transition-colors"
-                        placeholder="1kg, 2kg, 5kg" />
+                      <label className="block text-[10px] font-bold uppercase tracking-widest text-white/40 mb-2">Weight Pricing Variants</label>
+                      <textarea name="variantsText" value={form.variantsText} onChange={handleFormChange} rows={3}
+                        className="w-full bg-matte-black border border-white/10 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-neon-lime transition-colors resize-none font-mono"
+                        placeholder="1kg : 2000 : 1500&#10;2kg : 3800 : 3500&#10;5kg : 8500 : 8000" />
+                      <p className="text-[10px] text-white/30 mt-1">Format: Weight : Price : DiscountPrice (per line). This handles weight-based pricing.</p>
                     </div>
                   </div>
                 </div>
@@ -744,6 +1109,12 @@ export default function Admin() {
                         className="w-full bg-matte-black border border-white/10 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-neon-lime transition-colors resize-none"
                         placeholder="Mix 1 scoop with 200ml of cold water or milk. Consume post-workout..." />
                     </div>
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-widest text-white/40 mb-2">Nutrition Facts (One per line: Label:Amount:DailyValue)</label>
+                      <textarea name="nutritionFactsText" value={form.nutritionFactsText} onChange={handleFormChange} rows={3}
+                        className="w-full bg-matte-black border border-white/10 rounded-lg px-4 py-3 text-sm font-mono focus:outline-none focus:border-neon-lime transition-colors resize-none"
+                        placeholder="Calories: 120: -&#10;Protein: 25g: 50%&#10;Sugar: 0g: 0%" />
+                    </div>
                   </div>
                 </div>
 
@@ -762,6 +1133,25 @@ export default function Admin() {
                         <span className="text-xs uppercase tracking-widest text-white/60">{label}</span>
                       </label>
                     ))}
+                  </div>
+                </div>
+
+                {/* ── SECTION 7: SEO Optimization ── */}
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neon-lime mb-4">⑦ SEO Optimization</p>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-widest text-white/40 mb-2">Meta Title</label>
+                      <input name="seoTitle" value={form.seoTitle} onChange={handleFormChange}
+                        className="w-full bg-matte-black border border-white/10 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-neon-lime transition-colors"
+                        placeholder="Buy Nitro Gold Whey Isolate | Nitrogen Nutrition" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-widest text-white/40 mb-2">Meta Description</label>
+                      <textarea name="seoDescription" value={form.seoDescription} onChange={handleFormChange} rows={2}
+                        className="w-full bg-matte-black border border-white/10 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-neon-lime transition-colors resize-none"
+                        placeholder="Get the best whey protein isolate for muscle growth and recovery..." />
+                    </div>
                   </div>
                 </div>
 

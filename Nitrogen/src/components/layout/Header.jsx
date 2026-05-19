@@ -281,7 +281,9 @@ export default function Header() {
                         { to: '/dashboard#profile', icon: User, label: 'My Profile' },
                         { to: '/dashboard#orders', icon: Package, label: 'My Orders' },
                         { to: '/dashboard#refer', icon: Gift, label: 'Earn & Refer' },
-                      ].map(({ to, icon: Icon, label }) => (
+                      ]
+                      .filter(link => !(user?.role === 'admin' && (link.label === 'My Orders' || link.label === 'Earn & Refer')))
+                      .map(({ to, icon: Icon, label }) => (
                         <Link
                           key={to}
                           to={to}

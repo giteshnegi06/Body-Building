@@ -132,9 +132,11 @@ export default function Dashboard() {
                 <span className="flex items-center gap-1.5 bg-neon-lime/10 text-neon-lime border border-neon-lime/20 rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-widest">
                   <Star size={10} /> Elite Member
                 </span>
-                <span className="flex items-center gap-1.5 bg-white/5 text-white/50 border border-white/10 rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-widest">
-                  <Zap size={10} /> {orders.length} Orders
-                </span>
+                {user?.role !== 'admin' && (
+                  <span className="flex items-center gap-1.5 bg-white/5 text-white/50 border border-white/10 rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-widest">
+                    <Zap size={10} /> {orders.length} Orders
+                  </span>
+                )}
               </div>
             </div>
 
@@ -151,7 +153,7 @@ export default function Dashboard() {
           {/* Sidebar Tabs */}
           <div className="lg:col-span-3">
             <div className="bg-graphite/50 border border-white/5 rounded-2xl p-3 space-y-1 sticky top-28">
-              {TABS.map(({ id, label, icon: Icon }) => (
+              {TABS.filter(t => !(user?.role === 'admin' && (t.id === 'orders' || t.id === 'refer'))).map(({ id, label, icon: Icon }) => (
                 <button
                   key={id}
                   onClick={() => setActiveTab(id)}
@@ -268,12 +270,12 @@ export default function Dashboard() {
                   </form>
 
                   {/* Account Stats */}
-                  <div className="grid grid-cols-3 gap-4 mt-8 pt-8 border-t border-white/5">
+                  <div className={cn("grid gap-4 mt-8 pt-8 border-t border-white/5", user?.role === 'admin' ? "grid-cols-1" : "grid-cols-3")}>
                     {[
-                      { label: 'Total Orders', value: orders.length || '—' },
-                      { label: 'Member Since', value: user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }) : '—' },
-                      { label: 'Referrals', value: '0' },
-                    ].map(({ label, value }) => (
+                      { label: 'Total Orders', value: orders.length || '—', show: user?.role !== 'admin' },
+                      { label: 'Member Since', value: user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }) : '—', show: true },
+                      { label: 'Referrals', value: '0', show: user?.role !== 'admin' },
+                    ].filter(s => s.show).map(({ label, value }) => (
                       <div key={label} className="text-center bg-matte-black/50 rounded-xl p-4 border border-white/5">
                         <p className="text-2xl font-display font-bold text-neon-lime">{value}</p>
                         <p className="text-[10px] text-white/40 uppercase tracking-widest mt-1">{label}</p>
@@ -284,7 +286,7 @@ export default function Dashboard() {
               )}
 
               {/* ── MY ORDERS ── */}
-              {activeTab === 'orders' && (
+              {activeTab === 'orders' && user?.role !== 'admin' && (
                 <motion.div
                   key="orders"
                   initial={{ opacity: 0, y: 12 }}
@@ -391,7 +393,7 @@ export default function Dashboard() {
               )}
 
               {/* ── EARN & REFER ── */}
-              {activeTab === 'refer' && (
+              {activeTab === 'refer' && user?.role !== 'admin' && (
                 <motion.div
                   key="refer"
                   initial={{ opacity: 0, y: 12 }}

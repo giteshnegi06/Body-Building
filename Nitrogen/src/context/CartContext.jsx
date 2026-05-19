@@ -17,6 +17,12 @@ export const CartProvider = ({ children }) => {
           const response = await axiosClient.get('/users/cart');
           const backendCart = response.data.data.cart;
           // Map backend cart to frontend structure
+          const resolvePrice = (prod, sz) => {
+            if (!prod) return 0;
+            const variant = prod.variants?.find(v => v.weight === sz);
+            return variant ? (variant.discountPrice || variant.price) : (prod.discountPrice || prod.price || 0);
+          };
+
           const flatCart = backendCart
             .filter(item => item.product) // Filter out null products
             .map(item => ({
@@ -24,7 +30,8 @@ export const CartProvider = ({ children }) => {
               id: item.product._id,
               selectedFlavor: item.flavor,
               selectedSize: item.size,
-              quantity: item.quantity
+              quantity: item.quantity,
+              price: resolvePrice(item.product, item.size)
             }));
           setCart(flatCart);
         } catch (error) {
@@ -77,7 +84,14 @@ export const CartProvider = ({ children }) => {
         return newCart;
       }
 
-      return [...prev, { ...product, selectedFlavor: flavor, selectedSize: size, quantity }];
+      const resolvePrice = (prod, sz) => {
+        if (!prod) return 0;
+        const variant = prod.variants?.find(v => v.weight === sz);
+        return variant ? (variant.discountPrice || variant.price) : (prod.discountPrice || prod.price || 0);
+      };
+
+      const resolvedPrice = resolvePrice(product, size);
+      return [...prev, { ...product, selectedFlavor: flavor, selectedSize: size, quantity, price: resolvedPrice }];
     });
   };
 

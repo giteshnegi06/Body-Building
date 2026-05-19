@@ -20,6 +20,7 @@ const normalise = (p) => ({
   price:         p.discountPrice || p.price || 0,
   originalPrice: p.originalPrice || (p.discountPrice && p.price > p.discountPrice ? p.price : null),
   image:         (p.images && p.images[0]) || p.image || null,
+  images:        Array.isArray(p.images) && p.images.length > 0 ? p.images : (p.image ? [p.image] : []),
   category:      typeof p.category === 'object' ? (p.category?.slug || p.category?.name) : p.category,
   subCategory:   p.subCategory,
   rating:        p.ratings || p.rating || 4.5,
@@ -34,7 +35,8 @@ const normalise = (p) => ({
   stock:         p.stock ?? 99,
   isOutOfStock:  p.isOutOfStock || false,
   flavors:       p.flavor || p.flavors || [],
-  sizes:         p.weight || p.sizes || [],
+  sizes:         p.variants && p.variants.length > 0 ? p.variants.map(v => v.weight) : (p.weight || p.sizes || []),
+  variants:      p.variants || [],
   description:   p.description || p.shortDescription || '',
   usage:         p.usage || p.usageInstructions || '',
   createdAt:     p.createdAt,
@@ -55,6 +57,11 @@ export default function ProductDetails() {
   const [activeTab, setActiveTab] = useState('info');
   const [showNotifyEmail, setShowNotifyEmail] = useState(false);
   const [notifyEmail, setNotifyEmail] = useState('');
+  const [selectedImage, setSelectedImage] = useState(null);
+
+  const activeVariant = product?.variants?.find(v => v.weight === selectedSize);
+  const currentPrice = activeVariant ? (activeVariant.discountPrice || activeVariant.price) : (product?.price || 0);
+  const currentOriginalPrice = activeVariant ? (activeVariant.discountPrice ? activeVariant.price : null) : product?.originalPrice;
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -65,6 +72,7 @@ export default function ProductDetails() {
         setProduct(p);
         setSelectedFlavor(p.flavors[0] || '');
         setSelectedSize(p.sizes[0] || '');
+        setSelectedImage(p.images[0] || null);
       } catch (err) {
         const mockP = PRODUCTS.find((p) => p.id === id);
         if (mockP) {
@@ -72,6 +80,7 @@ export default function ProductDetails() {
           setProduct(p);
           setSelectedFlavor(p.flavors[0] || '');
           setSelectedSize(p.sizes[0] || '');
+          setSelectedImage(p.images[0] || null);
         } else {
           setProduct(null);
         }
@@ -108,12 +117,12 @@ export default function ProductDetails() {
     <div className="pt-24 bg-matte-black min-h-screen">
       {/* Breadcrumbs */}
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-4">
-        <div className="flex items-center space-x-3 text-[10px] font-bold uppercase tracking-[0.2em] text-white/30">
-          <Link to="/" className="hover:text-neon-lime">Home</Link>
-          <ChevronRight size={10} />
-          <Link to="/shop" className="hover:text-neon-lime">Shop</Link>
-          <ChevronRight size={10} />
-          <span className="text-neon-lime">{product.name}</span>
+        <div className="flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-white/30">
+          <Link to="/" className="hover:text-neon-lime whitespace-nowrap">Home</Link>
+          <ChevronRight size={10} className="flex-shrink-0" />
+          <Link to="/shop" className="hover:text-neon-lime whitespace-nowrap">Shop</Link>
+          <ChevronRight size={10} className="flex-shrink-0" />
+          <span className="text-neon-lime truncate">{product.name}</span>
         </div>
       </div>
 
@@ -126,7 +135,7 @@ export default function ProductDetails() {
               animate={{ opacity: 1, scale: 1 }}
               className="relative aspect-square rounded-3xl overflow-hidden bg-graphite group"
             >
-              <img src={product.image} alt={product.name} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700" />
+              <img src={selectedImage || product.image} alt={product.name} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700" />
               <div className="absolute top-6 right-6 z-10">
                 <button 
                   onClick={() => toggleWishlist(product)}
@@ -138,16 +147,16 @@ export default function ProductDetails() {
                   <Heart size={24} fill={liked ? "currentColor" : "none"} />
                 </button>
               </div>
-              <div className="absolute bottom-6 left-6 flex items-center space-x-2">
-                 <span className="px-3 py-1 bg-neon-lime text-matte-black text-[10px] font-bold uppercase tracking-wider rounded">Authentic</span>
-                 <span className="px-3 py-1 bg-blue-600 text-white text-[10px] font-bold uppercase tracking-wider rounded">Lab Tested</span>
+              <div className="absolute bottom-6 left-6 right-6 flex flex-wrap items-center gap-2">
+                 <span className="px-3 py-1 bg-neon-lime text-matte-black text-[10px] font-bold uppercase tracking-wider rounded whitespace-nowrap">Authentic</span>
+                 <span className="px-3 py-1 bg-blue-600 text-white text-[10px] font-bold uppercase tracking-wider rounded whitespace-nowrap">Lab Tested</span>
               </div>
             </motion.div>
             
             <div className="grid grid-cols-4 gap-4">
-               {[...Array(4)].map((_, i) => (
-                 <div key={i} className="aspect-square bg-graphite rounded-xl overflow-hidden cursor-pointer opacity-40 hover:opacity-100 transition-opacity">
-                    <img src={product.image} alt="prev" className="w-full h-full object-cover grayscale" />
+               {product.images.map((img, i) => (
+                 <div key={i} onClick={() => setSelectedImage(img)} className={cn("aspect-square bg-graphite rounded-xl overflow-hidden cursor-pointer transition-opacity border-2", selectedImage === img ? "border-neon-lime opacity-100" : "border-transparent opacity-40 hover:opacity-100")}>
+                    <img src={img} alt="prev" className="w-full h-full object-cover grayscale" />
                  </div>
                ))}
             </div>
@@ -159,21 +168,21 @@ export default function ProductDetails() {
               <span className="text-neon-lime font-bold tracking-[0.3em] uppercase text-xs mb-4 block">{product.brand} Performance</span>
               <h1 className="text-4xl md:text-6xl font-display font-bold uppercase leading-tight mb-4">{product.name}</h1>
               
-              <div className="flex items-center space-x-4 mb-6">
+              <div className="flex flex-wrap items-center gap-3 mb-6">
                 <div className="flex items-center text-neon-lime">
                   {[...Array(5)].map((_, i) => <Star key={i} size={16} fill={i < Math.floor(product.rating) ? "currentColor" : "none"} />)}
                   <span className="ml-2 text-soft-white font-bold">{product.rating}</span>
                 </div>
-                <div className="h-4 w-px bg-white/20" />
+                <div className="hidden sm:block h-4 w-px bg-white/20" />
                 <span className="text-white/40 text-sm uppercase tracking-widest">{product.reviewsCount} Verified Reviews</span>
               </div>
 
-              <div className="flex items-center space-x-4">
-                <span className="text-4xl font-display font-bold text-soft-white">₹{product.price.toLocaleString('en-IN')}</span>
-                {product.originalPrice && (
-                  <span className="text-2xl font-display font-bold text-white/20 line-through">₹{product.originalPrice.toLocaleString('en-IN')}</span>
+              <div className="flex flex-wrap items-center gap-4">
+                <span className="text-4xl font-display font-bold text-soft-white">₹{currentPrice.toLocaleString('en-IN')}</span>
+                {currentOriginalPrice && (
+                  <span className="text-2xl font-display font-bold text-white/20 line-through">₹{currentOriginalPrice.toLocaleString('en-IN')}</span>
                 )}
-                <span className="bg-neon-lime/10 text-neon-lime px-3 py-1 text-[10px] font-bold uppercase tracking-widest rounded border border-neon-lime/20">Free Shipping</span>
+                <span className="bg-neon-lime/10 text-neon-lime px-3 py-1 text-[10px] font-bold uppercase tracking-widest rounded border border-neon-lime/20 whitespace-nowrap">Free Shipping</span>
               </div>
             </div>
 
@@ -223,7 +232,7 @@ export default function ProductDetails() {
 
               <div>
                  <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-white/40 mb-4">Quantity</h4>
-                 <div className="flex items-center space-x-6">
+                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
                     <div className="flex items-center space-x-1 bg-graphite rounded-lg p-1">
                        <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="p-3 hover:text-neon-lime"><Minus size={16} /></button>
                        <span className="w-12 text-center font-display font-bold text-xl">{quantity}</span>
@@ -248,7 +257,7 @@ export default function ProductDetails() {
                     <span>Out of Stock</span>
                   </button>
                   {showNotifyEmail ? (
-                    <div className="flex-1 flex gap-2">
+                    <div className="flex-1 flex flex-col sm:flex-row gap-2">
                       <input 
                         type="email" 
                         value={notifyEmail} 
@@ -328,7 +337,7 @@ export default function ProductDetails() {
       {/* Tabs Section */}
       <section className="bg-graphite/30 py-24 border-t border-white/5">
         <div className="max-w-7xl mx-auto px-4 md:px-8">
-          <div className="flex border-b border-white/10 mb-12">
+          <div className="flex overflow-x-auto no-scrollbar border-b border-white/10 mb-12 -mx-4 px-4 md:mx-0 md:px-0">
             {[
               { id: 'info', label: 'Detailed Specs', icon: Info },
               { id: 'nutrition', label: 'Nutrition Facts', icon: FlaskConical },
@@ -338,7 +347,7 @@ export default function ProductDetails() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  "flex items-center space-x-3 px-8 py-6 text-sm font-bold uppercase tracking-widest transition-all relative",
+                  "flex items-center space-x-2 sm:space-x-3 px-6 sm:px-8 py-4 sm:py-6 text-xs sm:text-sm font-bold uppercase tracking-widest transition-all relative whitespace-nowrap flex-shrink-0",
                   activeTab === tab.id ? "text-neon-lime" : "text-white/40 hover:text-white"
                 )}
               >
@@ -392,7 +401,7 @@ export default function ProductDetails() {
                 <motion.div 
                   key="nutrition"
                   initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-                  className="max-w-xl mx-auto bg-white text-matte-black p-8 md:p-12 border-4 border-matte-black shadow-[15px_15px_0px_#ccff00]"
+                  className="max-w-xl mx-auto bg-white text-matte-black p-6 md:p-12 border-4 border-matte-black shadow-[8px_8px_0px_#ccff00] md:shadow-[15px_15px_0px_#ccff00]"
                 >
                   <h3 className="text-4xl font-display font-black uppercase text-center mb-1">Nutrition Facts</h3>
                   <div className="h-3 bg-matte-black mb-4" />
@@ -405,7 +414,10 @@ export default function ProductDetails() {
                     product.nutritionFacts.map((fact, i) => (
                       <div key={i} className="flex justify-between border-b border-matte-black py-2">
                         <span className="font-bold uppercase">{fact.label}</span>
-                        <span className="font-bold uppercase">{fact.value}</span>
+                        <div className="flex gap-4">
+                          <span className="font-bold uppercase">{fact.amount}</span>
+                          {fact.dailyValue && <span className="font-bold uppercase w-12 text-right">{fact.dailyValue}</span>}
+                        </div>
                       </div>
                     ))
                   ) : (
